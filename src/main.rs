@@ -67,7 +67,7 @@ impl Default for PaintingApp {
             prev_onion_color: Color32::RED,
             next_onion_color: Color32::BLUE,
             copied_frame: None,
-            export_url: "http://localhost:8080/upload".to_string(), // TODO: server ip
+            export_url: "http://localhost:1337/upload".to_string(), // TODO: server ip
             canvas_aspect_ratio: 3.0 / 4.0, // 3:4 aspect ratio
             canvas_rect: None,
             playing_animation: false,
