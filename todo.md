@@ -3,8 +3,6 @@
 - ~~brushes~~
 - fix flickering after drawing stroke - 
 - make left panel fixed width to fix resizing problems
-- make buttons bigger
-- 
 
 # done
 - live stroke display
@@ -16,3 +14,4 @@
 - exporting and uploading over POST to the server
 - thumbnails for frames
 - clear all frames button
+- make buttons bigger
