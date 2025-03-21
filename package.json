@@ -1,0 +1,24 @@
+{
+  "name": "22c883d79cb646139cc4c228ec6c633c",
+  "version": "1.0.0",
+  "description": "you should try to crack that hash!",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hash251/4d-digital-praxinoscope-written-in-c.git"
+  },
+  "author": "joey malvinni",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hash251/4d-digital-praxinoscope-written-in-c/issues"
+  },
+  "homepage": "https://github.com/hash251/4d-digital-praxinoscope-written-in-c#readme",
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.2",
+    "ws": "^8.18.1"
+  }
+}
