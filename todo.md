@@ -1,7 +1,7 @@
 # todo
 - ~~pixel erasing~~
 - ~~brushes~~
-- fix flickering after drawing stroke - 
+- fix flickering after drawing stroke
 - make left panel fixed width to fix resizing problems
 
 # done
