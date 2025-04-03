@@ -7,14 +7,12 @@
 - [ ] fix flickering after drawing stroke
 - [ ] make left panel fixed width to fix resizing problems
 - [ ] exporting progress updates
-- [ ] 16:9 resolution canvas
+- [ ] 16:9 resolution canvas [exporting]
 - [ ] exporting cooldown -> notifications
 
 
 # todo - display client
 - [ ] Eventually needs to know which monitor relatively corresponds to it's real life position, and be able to offset this with the pi number -> multible Pis
-- [ ] add a next-image element which caches the next image and shows it 
-- [ ] need to have a queue of the strings of all of the sources, which updates the next image and the current image
 
 # done
 ## drawing app
@@ -32,4 +30,6 @@
 ## server 
 - [x] implemented websockets and POST requests for images
 
-
+## display client
+- [x] add a next-image element which caches the next image and shows it 
+- [x] add a queue

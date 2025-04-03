@@ -835,18 +835,18 @@ impl PaintingApp {
                 }
             }
 
-            let frame_file = format!("./temp_frames/frame_{:01}.png", frame_index);
+            let frame_file = format!("./temp_frames/{:01}.png", frame_index);
             imgbuf
                 .save_with_format(&frame_file, image::ImageFormat::Png)
                 .expect("failed to save frame as png");
 
             let file_part = reqwest::blocking::multipart::Part::file(frame_file.clone())
                 .expect("failed to create file part")
-                .file_name(format!("frame_{:01}.png", frame_index))
+                .file_name(format!("{:01}.png", frame_index))
                 .mime_str("image/png")
                 .expect("failed to set mime type");
 
-            form = form.part(format!("frame_{}", frame_index), file_part);
+            form = form.part(format!("{}", frame_index), file_part);
         }
 
         match client.post(&self.export_url).multipart(form).send() {
@@ -864,7 +864,7 @@ impl PaintingApp {
         }
 
         if temp_dir.exists() {
-            // std::fs::remove_dir_all(temp_dir).expect("failed to clean up temp directory");
+            std::fs::remove_dir_all(temp_dir).expect("failed to clean up temp directory");
         }
     } 
 }
