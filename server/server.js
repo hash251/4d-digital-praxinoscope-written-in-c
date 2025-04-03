@@ -20,7 +20,7 @@ app.use('/uploads', express.static(uploadsDir));
 
 let clients = [];
 wss.on('connection', (ws) => {
-    console.log('[LOG] New WebSocket connection');
+    console.log('[WS] New WebSocket connection');
     clients.push(ws);
     ws.on('close', () => {
         clients = clients.filter(client => client !== ws);
@@ -87,7 +87,7 @@ app.post('/upload', upload.any(), (req, res) => {
         return res.status(400).send('No files were uploaded.');
     }
     
-    console.log(`[LOG] Received ${req.files.length} images`);
+    console.log(`[POST] Received ${req.files.length} images from drawing client`);
     
     const sortedFiles = [...req.files].sort((a, b) => {
         const aNum = parseInt(a.fieldname.split('_')[1]);
@@ -106,7 +106,7 @@ app.post('/upload', upload.any(), (req, res) => {
     res.send('Images uploaded successfully!');
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`[LOG] Server started at http://127.0.0.1:${PORT}`);
     cleanUploadsDir();
 });
