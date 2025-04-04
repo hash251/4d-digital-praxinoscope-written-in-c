@@ -14,6 +14,10 @@
 # todo - display client
 - [ ] Eventually needs to know which monitor relatively corresponds to it's real life position, and be able to offset this with the pi number -> multible Pis
 
+# todo - admin panel
+- [ ] implement an admin panel which can remove images from the queue, forcefully go to the next image
+- [ ] web app which will communicate with server via POST requests
+
 # done
 ## drawing app
 - [x] live stroke display
