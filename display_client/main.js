@@ -4,6 +4,22 @@ const WebSocket = require('ws');
 const dotenv = require('dotenv');
 dotenv.config();
 
+const fs = require('fs');
+
+let baseIndex = 0;
+try {
+  const idFilePath = path.join(require('os').homedir(), '.config', 'id');
+  const fileContents = fs.readFileSync(idFilePath, 'utf8');
+  baseIndex = parseInt(fileContents.trim(), 10) * 2;
+  if (isNaN(baseIndex)) {
+    console.warn('[!] Could not parse integer from ~/.config/id, defaulting to 0');
+    baseIndex = 0;
+  }
+  console.log(`[+] Base index: ${baseIndex}`);
+} catch (err) {
+  console.error('[-] Failed to read ~/.config/id:', err);
+}
+
 const PORT = process.env.PORT || "1337";
 const PROTOCOL = process.env.PROTOCOL || "ws";
 const IP = process.env.IP || '127.0.0.1';
@@ -58,22 +74,22 @@ function connectWebSocket() {
     try {
       const parsed = JSON.parse(data);
       const currentTime = Date.now();
-      
+  
       console.log('[+] Received update from server');
-      
+  
       if (lastUpdateTime !== null) {
-        const timeDifference = (currentTime - lastUpdateTime) / 1000; // Convert to seconds
+        const timeDifference = (currentTime - lastUpdateTime) / 1000;
         console.log(`[TIME] Time since last update: ${timeDifference.toFixed(2)} seconds`);
       }
-      
+  
       lastUpdateTime = currentTime;
-      
-      let i = 0; // let i = window_offset; <- to have the correct absolute frame index
-      windows.forEach(({ win, id }) => {
-        if (parsed.images && parsed.images[i]) {
-          win.webContents.send('image-update', `${SERVER_URL.replace(/^ws/, 'http')}${parsed.images[i]}`);
+  
+      windows.forEach(({ win }, idx) => {
+        const imageIndex = baseIndex + idx;
+        if (parsed.images && parsed.images[imageIndex]) {
+          const imageUrl = `${SERVER_URL.replace(/^ws/, 'http')}${parsed.images[imageIndex]}`;
+          win.webContents.send('image-update', imageUrl);
         }
-        i += 1;
       });
     } catch (error) {
       console.error('[-] Error parsing WebSocket message:', error);
@@ -94,25 +110,31 @@ function connectWebSocket() {
 
 app.whenReady().then(() => {
   const displays = screen.getAllDisplays();
-  console.log(displays[0], displays[1]);
-  
+
   if (displays.length < 2) {
     console.error('The required 2 monitors were not detected, only detected', displays.length, 'monitor(s)');
     app.quit();
     return;
   }
-  
-  createWindow(0, displays[0].bounds);
-  createWindow(1, displays[1].bounds);
+
+  displays.sort((a, b) => a.bounds.x - b.bounds.x);
+
+  const primaryDisplay = displays[0];
+  const offsetDisplay = displays[1];
+
+  createWindow(0, primaryDisplay.bounds);
+  createWindow(1, offsetDisplay.bounds);
+
   connectWebSocket();
-  
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow(0, displays[0].bounds);
-      createWindow(1, displays[1].bounds);
+      createWindow(0, primaryDisplay.bounds);
+      createWindow(1, offsetDisplay.bounds);
     }
   });
 });
+
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

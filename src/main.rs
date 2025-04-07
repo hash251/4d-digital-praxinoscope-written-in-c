@@ -4,7 +4,10 @@ use eframe::egui::{Color32, Key, Pos2, Rect, Sense, Stroke as EguiStroke, Vec2};
 fn main() -> eframe::Result {
     env_logger::init();
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([1080.0, 1920.0]),
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([1080.0, 1920.0])
+            .with_maximized(true)
+            .with_fullscreen(true),
         ..Default::default()
     };
     eframe::run_native(
@@ -22,6 +25,15 @@ struct Stroke {
     points: Vec<Pos2>,
     color: Color32,
     size: f32,
+}
+
+#[derive(Clone)]
+struct Notification {
+    id: u64,
+    message: String,
+    color: Color32,
+    created_at: f64,
+    duration: f64, // in seconds
 }
 
 struct PaintingApp {
@@ -46,6 +58,10 @@ struct PaintingApp {
     undo_history: Vec<Vec<Vec<Stroke>>>,
     redo_history: Vec<Vec<Vec<Stroke>>>,
     eraser_mode: bool,
+
+    notifications: Vec<Notification>,
+    next_notification_id: u64,
+    exporting: bool, 
 }
 
 impl Default for PaintingApp {
@@ -77,12 +93,39 @@ impl Default for PaintingApp {
             undo_history: Vec::new(),
             redo_history: Vec::new(),
             eraser_mode: false,
+            notifications: Vec::new(),
+            next_notification_id: 0,
+            exporting: false,
         }
     }
 }
 
 impl eframe::App for PaintingApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        ctx.set_pixels_per_point(1.2); // this makes no sense
+
+        self.update_notifications(ctx);
+
+        if self.exporting {
+            // Reset the flag immediately
+            self.exporting = false;
+            
+            // Clone necessary data for the thread
+            let frames = self.frames.clone();
+            let export_url = self.export_url.clone();
+            let canvas_rect = self.canvas_rect.clone();
+            
+            // Get a context we can use from another thread
+            let ctx_clone = ctx.clone();
+            let next_id = self.next_notification_id;
+            self.next_notification_id += 1;
+            
+            // Spawn a thread to handle the export
+            std::thread::spawn(move || {
+                Self::export_animation_threaded(frames, export_url, canvas_rect, next_id, ctx_clone);
+            });
+        }
+
         if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(Key::C)) {
             self.copy_current_frame();
         }
@@ -110,7 +153,7 @@ impl eframe::App for PaintingApp {
 
         egui::SidePanel::left("left_panel").show(ctx, |ui| {
             ui.spacing_mut().item_spacing.y = 8.0;
-            ui.spacing_mut().button_padding = Vec2::new(10.0, 6.0);
+            ui.spacing_mut().button_padding = Vec2::new(5.0, 3.0);
             
             let mut style = (*ctx.style()).clone();
             style.text_styles = [
@@ -123,12 +166,12 @@ impl eframe::App for PaintingApp {
             .into();
             ctx.set_style(style);
             
-            let larger_font = egui::FontId::new(20.0, egui::FontFamily::Proportional);
+            let larger_font = egui::FontId::new(18.0, egui::FontFamily::Proportional);
 
 
-            ui.add_space(10.0);
+            ui.add_space(1.0);
             ui.heading("Tools");
-            ui.add_space(5.0);
+            ui.add_space(1.0);
 
             ui.horizontal(|ui| {
                 ui.label("Brush Color:");
@@ -156,9 +199,9 @@ impl eframe::App for PaintingApp {
                 }
             });
 
-            ui.add_space(5.0);
+            ui.add_space(1.0);
             ui.separator();
-            ui.add_space(4.0);
+            ui.add_space(1.0);
 
             ui.horizontal(|ui| {
                 if ui.button("↩ Undo").clicked() {
@@ -169,17 +212,17 @@ impl eframe::App for PaintingApp {
                 }
             });
 
-            ui.add_space(5.0);
+            ui.add_space(1.0);
             ui.separator();
-            ui.add_space(4.0);
+            ui.add_space(1.0);
 
             ui.heading("Animation");
-            ui.add_space(2.0);
+            ui.add_space(1.0);
 
             ui.horizontal(|ui| {
                 if ui
                     .button(if self.playing_animation {
-                        "⏹ Stop "
+                        "⏹ Stop"
                     } else {
                         "▶ Play"
                     })
@@ -192,12 +235,12 @@ impl eframe::App for PaintingApp {
 
             ui.add(egui::Slider::new(&mut self.animation_speed, 1.0..=24.0).text("FPS"));
 
-            ui.add_space(5.0);
+            ui.add_space(1.0);
             ui.separator();
-            ui.add_space(4.0);
+            ui.add_space(1.0);
 
             ui.heading("Onion Skinning");
-            ui.add_space(4.0);
+            ui.add_space(1.0);
 
             ui.checkbox(&mut self.show_onion_skin, "Show Onion Skin");
             ui.add(egui::Slider::new(&mut self.onion_skin_opacity, 0.0..=1.0).text("Opacity"));
@@ -213,12 +256,12 @@ impl eframe::App for PaintingApp {
                 ui.color_edit_button_srgba(&mut self.next_onion_color);
             });
 
-            ui.add_space(5.0);
+            ui.add_space(1.0);
             ui.separator();
-            ui.add_space(4.0);
+            ui.add_space(1.0);
 
             ui.heading("Frame Operations");
-            ui.add_space(5.0);
+            ui.add_space(1.0);
 
             egui::Grid::new("frame_ops_grid")
                 .num_columns(2)
@@ -250,9 +293,9 @@ impl eframe::App for PaintingApp {
                     ui.end_row();
                 });
 
-            ui.add_space(5.0);
+            ui.add_space(1.0);
             ui.separator();
-            ui.add_space(4.0);
+            ui.add_space(1.0);
 
 
             let export = ui.add(egui::SelectableLabel::new(
@@ -261,7 +304,7 @@ impl eframe::App for PaintingApp {
             ));
 
             if export.clicked() {
-                self.export_animation();
+                self.start_export_animation(ctx);
             }
         });
 
@@ -407,6 +450,8 @@ impl eframe::App for PaintingApp {
                 );
             }
         });
+
+        self.draw_notifications(ctx);
     }
 }
 
@@ -713,18 +758,125 @@ impl PaintingApp {
         }
     }
 
-    fn export_animation(&self) {
+    fn add_notification(&mut self, message: String, color: Color32, duration: f64, ctx: &egui::Context) {
+        let notification = Notification {
+            id: self.next_notification_id,
+            message,
+            color,
+            created_at: ctx.input(|i| i.time),
+            duration,
+        };
+        self.next_notification_id += 1;
+        self.notifications.push(notification);
+    }
+
+    fn update_notifications(&mut self, ctx: &egui::Context) {
+        ctx.data_mut(|d| {
+            let notifications = d.get_temp_mut_or_default::<Vec<Notification>>(egui::Id::new("global_notifications"));
+            if !notifications.is_empty() {
+                let mut to_move = Vec::new();
+                std::mem::swap(notifications, &mut to_move);
+                self.notifications.append(&mut to_move);
+            }
+        });
+        
+        let current_time = ctx.input(|i| i.time);
+        self.notifications.retain(|notification| {
+            current_time - notification.created_at < notification.duration
+        });
+        
+        if !self.notifications.is_empty() {
+            ctx.request_repaint();
+        }
+    }
+
+    fn draw_notifications(&self, ctx: &egui::Context) {
+        if self.notifications.is_empty() {
+            return;
+        }
+        
+        let screen_rect = ctx.screen_rect();
+        let notification_width = screen_rect.width() * 0.3;
+        let mut y_offset = 20.0;
+        
+        for notification in &self.notifications {
+            let fade_time = 0.5;
+            let time_alive = ctx.input(|i| i.time) - notification.created_at;
+            let time_left = notification.duration - time_alive;
+            
+            let opacity = if time_alive < fade_time {
+                time_alive / fade_time
+            } else if time_left < fade_time {
+                time_left / fade_time
+            } else {
+                1.0
+            };
+            
+            let alpha = (opacity * 255.0) as u8;
+            let bg_color = Color32::from_rgba_unmultiplied(40, 40, 40, alpha);
+            let text_color = Color32::from_rgba_unmultiplied(
+                notification.color.r(),
+                notification.color.g(),
+                notification.color.b(),
+                alpha,
+            );
+            
+            let window_id = egui::Id::new(format!("notification_{}", notification.id));
+            
+            egui::Window::new(format!("Notification {}", notification.id))
+                .id(window_id)
+                .fixed_size([notification_width, 0.0])
+                .fixed_pos([screen_rect.right() - notification_width - notification_width / 20.0, y_offset])
+                .title_bar(false)
+                .frame(egui::Frame::none().fill(bg_color).rounding(8.0).stroke(egui::Stroke::new(1.0, text_color)))
+                .show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.add_space(10.0);
+                        ui.colored_label(text_color, &notification.message);
+                        ui.add_space(10.0);
+                    });
+                });
+            
+            y_offset += 50.0;
+        }
+    } 
+
+    fn start_export_animation(&mut self, ctx: &egui::Context) {
+        self.add_notification(
+            "Rendering frames and exporting animation...".to_string(),
+            Color32::YELLOW,
+            3.0,
+            ctx,
+        );
+        
+        self.exporting = true;
+    }
+    
+    fn export_animation_threaded(
+        frames: Vec<Vec<Stroke>>, 
+        export_url: String, 
+        canvas_rect_opt: Option<Rect>,
+        notification_id: u64,
+        ctx: egui::Context
+    ) {
         let temp_dir = std::path::Path::new("./temp_frames");
         if !temp_dir.exists() {
             std::fs::create_dir_all(temp_dir).expect("failed to create temp directory");
         }
 
-        println!("exporting animation to {}", self.export_url);
+        println!("exporting animation to {}", export_url);
 
-        let canvas_rect = if let Some(rect) = self.canvas_rect {
+        let canvas_rect = if let Some(rect) = canvas_rect_opt {
             rect
         } else {
             println!("err: no canvas rect found");
+            Self::add_notification_static(
+                "Error: Could not export animation".to_string(),
+                Color32::RED,
+                5.0,
+                notification_id + 1,
+                &ctx,
+            );
             return;
         };
 
@@ -732,21 +884,20 @@ impl PaintingApp {
         let height = canvas_rect.height() as u32;
 
         let client = reqwest::blocking::Client::new();
-
         let mut form = reqwest::blocking::multipart::Form::new();
 
-        for (frame_index, strokes) in self.frames.iter().enumerate() {
+        for (frame_index, strokes) in frames.iter().enumerate() {
             let mut imgbuf = image::RgbaImage::new(width, height);
 
             for pixel in imgbuf.pixels_mut() {
                 *pixel = image::Rgba([255, 255, 255, 255]);
             }
 
-            let mut ctx = tiny_skia::Pixmap::new(width, height).expect("failed to create pixmap");
+            let mut ctx_skia = tiny_skia::Pixmap::new(width, height).expect("failed to create pixmap");
 
             let mut paint = tiny_skia::Paint::default();
             paint.set_color(tiny_skia::Color::WHITE);
-            ctx.fill_rect(
+            ctx_skia.fill_rect(
                 tiny_skia::Rect::from_xywh(0.0, 0.0, width as f32, height as f32).unwrap(),
                 &paint,
                 tiny_skia::Transform::identity(),
@@ -770,7 +921,7 @@ impl PaintingApp {
                         let path =
                             tiny_skia::PathBuilder::from_circle(x, y, stroke.size / 2.0).unwrap();
 
-                        ctx.fill_path(
+                        ctx_skia.fill_path(
                             &path,
                             &paint,
                             tiny_skia::FillRule::Winding,
@@ -809,7 +960,7 @@ impl PaintingApp {
                     stroke_style.line_cap = tiny_skia::LineCap::Round;
                     stroke_style.line_join = tiny_skia::LineJoin::Round;
 
-                    ctx.stroke_path(
+                    ctx_skia.stroke_path(
                         &path,
                         &stroke_paint,
                         &stroke_style,
@@ -821,7 +972,7 @@ impl PaintingApp {
 
             for y in 0..height {
                 for x in 0..width {
-                    let pixel = ctx.pixel(x, y).unwrap();
+                    let pixel = ctx_skia.pixel(x, y).unwrap();
                     imgbuf.put_pixel(
                         x,
                         y,
@@ -849,24 +1000,75 @@ impl PaintingApp {
             form = form.part(format!("{}", frame_index), file_part);
         }
 
-        match client.post(&self.export_url).multipart(form).send() {
+        match client.post(&export_url).multipart(form).send() {
             Ok(response) => {
                 if response.status().is_success() {
                     println!("animation exported successfully!");
+                    Self::add_notification_static(
+                        "Animation exported successfully!".to_string(),
+                        Color32::GREEN,
+                        5.0,
+                        notification_id + 1,
+                        &ctx,
+                    );
                 } else {
                     println!(
                         "failed to export animation. server returned: {}",
                         response.status()
                     );
+                    Self::add_notification_static(
+                        format!("Export failed: Server returned {}", response.status()),
+                        Color32::RED,
+                        5.0,
+                        notification_id + 1,
+                        &ctx,
+                    );
                 }
             }
-            Err(e) => println!("failed to export animation: {}", e),
+            Err(e) => {
+                println!("failed to export animation: {}", e);
+                Self::add_notification_static(
+                    format!("Export failed: {}", e),
+                    Color32::RED,
+                    5.0,
+                    notification_id + 1,
+                    &ctx,
+                );
+            }
         }
 
         if temp_dir.exists() {
             std::fs::remove_dir_all(temp_dir).expect("failed to clean up temp directory");
         }
-    } 
+    }
+    
+    fn add_notification_static(message: String, color: Color32, duration: f64, id: u64, ctx: &egui::Context) {
+        let notification = Notification {
+            id,
+            message,
+            color,
+            created_at: ctx.input(|i| i.time),
+            duration,
+        };
+        
+        ctx.push_notification(notification);
+        ctx.request_repaint();
+    }
+
+}
+
+trait ContextExt {
+    fn push_notification(&self, notification: Notification);
+}
+
+impl ContextExt for egui::Context {
+    fn push_notification(&self, notification: Notification) {
+        self.data_mut(|d| {
+            let notifications = d.get_temp_mut_or_default::<Vec<Notification>>(egui::Id::new("global_notifications"));
+            notifications.push(notification);
+        });
+        self.request_repaint();
+    }
 }
 
 fn distance_to_line_segment(p: Pos2, v: Pos2, w: Pos2) -> f32 {
