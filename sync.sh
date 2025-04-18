@@ -1,7 +1,7 @@
 #!/bin/bash
 LOCAL_PATH=$(realpath ".")
 REMOTE_USER="pi"
-REMOTE_IPS=("10.107.200.150" "10.107.200.42" "10.107.200.11" "10.107.200.54")
+REMOTE_IPS=("172.17.21.2" "172.17.21.3" "172.17.21.4" "172.17.21.5")
 REMOTE_PATH="/home/pi/programming/project"
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 
@@ -40,35 +40,38 @@ for REMOTE_IP in "${REMOTE_IPS[@]}"; do
    echo 'PROTOCOL=ws' >> $REMOTE_PATH/.env"
   echo "[+] .env file updated on remote with the local ip: $LOCAL_IP"
   
+  # Fix NVM setup and Node version check
   ssh -o ConnectTimeout=10 "$REMOTE_USER@$REMOTE_IP" "bash -c 'export NVM_DIR=\$HOME/.nvm;
    if [ ! -s \"\$NVM_DIR/nvm.sh\" ]; then
-   echo \"nvm is not installed. Installing nvm...\"
-   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
-   . \$NVM_DIR/nvm.sh
+     echo \"nvm is not installed. Installing nvm...\";
+     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash;
+     export NVM_DIR=\$HOME/.nvm;
+     [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\";
    else
-   . \$NVM_DIR/nvm.sh
-   fi
-   NODE_VERSION=\$(node --version | cut -d \"v\" -f 2)
-   NODE_MAJOR=\${NODE_VERSION%%.*}
-   if [ \"\$NODE_MAJOR\" -lt 20 ]; then
-   echo \"[+] Node.js version \$(node --version) is less than 20. Upgrading...\"
-   nvm install 22
-   nvm use 22
-   echo \"[+] Node.js upgraded to: \$(node --version)\"
+     . \"\$NVM_DIR/nvm.sh\";
+   fi;
+   
+   NODE_VERSION=\$(node --version 2>/dev/null | cut -d \"v\" -f 2);
+   if [ -z \"\$NODE_VERSION\" ]; then
+     echo \"[+] Node.js not found. Installing version 22...\";
+     nvm install 22;
+     nvm use 22;
+     echo \"[+] Node.js installed: \$(node --version)\";
    else
-   echo \"[+] Node.js version \$(node --version) is compatible.\"
+     NODE_MAJOR=\${NODE_VERSION%%.*};
+     if [ \"\$NODE_MAJOR\" -lt 20 ]; then
+       echo \"[+] Node.js version \$(node --version) is less than 20. Upgrading...\";
+       nvm install 22;
+       nvm use 22;
+       echo \"[+] Node.js upgraded to: \$(node --version)\";
+     else
+       echo \"[+] Node.js version \$(node --version) is compatible.\";
+     fi;
    fi'"
   
+  # Fix the npm install and dependency setup
   ssh -o ConnectTimeout=10 "$REMOTE_USER@$REMOTE_IP" "bash -c 'export NVM_DIR=\$HOME/.nvm;
-   . \$NVM_DIR/nvm.sh  ssh -X -o ConnectTimeout=10 "$REMOTE_USER@$REMOTE_IP" "bash -c 'export NVM_DIR=\$HOME/.nvm;
-   . \$NVM_DIR/nvm.sh;
-   cd $REMOTE_PATH;
-   if [ -f \"./node_modules/.bin/electron\" ]; then
-     DISPLAY=:0 ./node_modules/.bin/electron ./display_client
-     echo \"[+] Started electron application on remote server\"
-   else
-     echo \"[!] WARNING: Electron not found in node_modules, skipping application start\"
-   fi'";
+   [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\";
    cd $REMOTE_PATH;
    echo \"Using Node: \$(node --version)\";
    if [ ! -d \"node_modules\" ]; then
@@ -78,23 +81,24 @@ for REMOTE_IP in "${REMOTE_IPS[@]}"; do
          npm ci || npm install;
        else
          npm install;
-       fi
+       fi;
        echo \"[+] Dependencies installed on remote server\";
      else
        echo \"[!] WARNING: No package.json found in $REMOTE_PATH, skipping npm install\";
-     fi
+     fi;
    else
      echo \"[+] node_modules directory exists, skipping npm install\";
    fi'"
   
+  # Launch the electron application
   ssh -X -o ConnectTimeout=10 "$REMOTE_USER@$REMOTE_IP" "bash -c 'export NVM_DIR=\$HOME/.nvm;
-   . \$NVM_DIR/nvm.sh;
+   [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\";
    cd $REMOTE_PATH;
    if [ -f \"./node_modules/.bin/electron\" ]; then
-     DISPLAY=:0 ./node_modules/.bin/electron ./display_client
-     echo \"[+] Started electron application on remote server\"
+     DISPLAY=:0 ./node_modules/.bin/electron ./display_client;
+     echo \"[+] Started electron application on remote server\";
    else
-     echo \"[!] WARNING: Electron not found in node_modules, skipping application start\"
+     echo \"[!] WARNING: Electron not found in node_modules, skipping application start\";
    fi'"
   
   echo "=========================================="

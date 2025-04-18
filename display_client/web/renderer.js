@@ -1,9 +1,3 @@
-let imageId = null;
-
-window.api.receive('init', (data) => {
-    imageId = data.id;
-});
-
 window.api.receive('image-update', (imageSrc) => {
     console.log('Updating image source to:', imageSrc);
     const image = document.getElementById('image');

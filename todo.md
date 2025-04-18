@@ -1,14 +1,20 @@
 # todo - server
-- [ ] communicate with multiple display clients -- need to keep track of which IP corresponds to the correct relative image number
+- [x] communicate with multiple display clients
 - [x] implemented websockets and POST requests for images
 - [x] image queue system, could just be time-reliant for now
 
+# todo - display client
+- [ ] fullscreen main monitor
+- [ ] handle websocket errors when the server is offline
+- [x] store variable to keep track of monitor index
+- [x] add a next-image element which caches the next image and shows it 
+- [x] add a queue
+
 # todo - drawing app
-- [ ] modularization
+- [ ] **modularization**
+- [ ] add an exporting cooldown
 - [ ] fix flickering after drawing stroke
 - [ ] make left panel fixed width to fix resizing problems
-- [ ] 16:9 resolution canvas [exporting]
-- [ ] exporting cooldown -> notifications
 - [x] exporting progress updates
 - [x] live stroke display
 - [x] frames represented as indexes
@@ -21,9 +27,3 @@
 - [x] clear all frames button
 - [x] make buttons bigger
 - [x] **notification system**
-
-
-# todo - display client
-- [ ] Eventually needs to know which monitor relatively corresponds to it's real life position, and be able to offset this with the pi number -> multible Pis
-- [x] add a next-image element which caches the next image and shows it 
-- [x] add a queue

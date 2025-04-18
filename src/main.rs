@@ -107,20 +107,16 @@ impl eframe::App for PaintingApp {
         self.update_notifications(ctx);
 
         if self.exporting {
-            // Reset the flag immediately
             self.exporting = false;
             
-            // Clone necessary data for the thread
             let frames = self.frames.clone();
             let export_url = self.export_url.clone();
             let canvas_rect = self.canvas_rect.clone();
             
-            // Get a context we can use from another thread
             let ctx_clone = ctx.clone();
             let next_id = self.next_notification_id;
             self.next_notification_id += 1;
             
-            // Spawn a thread to handle the export
             std::thread::spawn(move || {
                 Self::export_animation_threaded(frames, export_url, canvas_rect, next_id, ctx_clone);
             });

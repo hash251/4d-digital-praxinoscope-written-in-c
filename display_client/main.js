@@ -122,15 +122,15 @@ app.whenReady().then(() => {
   const primaryDisplay = displays[0];
   const offsetDisplay = displays[1];
 
-  createWindow(0, primaryDisplay.bounds);
-  createWindow(1, offsetDisplay.bounds);
+  createWindow(0, offsetDisplay.bounds);
+  createWindow(1, primaryDisplay.bounds);
 
   connectWebSocket();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow(0, primaryDisplay.bounds);
-      createWindow(1, offsetDisplay.bounds);
+      createWindow(0, offsetDisplay.bounds);
+      createWindow(1, primaryDisplay.bounds);
     }
   });
 });
