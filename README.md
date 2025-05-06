@@ -17,12 +17,6 @@ Start drawing clients:
 ```
 ./sync.sh
 ```
-
-## Todo
-- **Figure out how managing images will work**
-- Potentially add a screen to view the queue and remove people from queue if necessary
-- Enforce a cooldown to the export button on the drawing client
-
 ## Architecture
 
 Drawing Client:
