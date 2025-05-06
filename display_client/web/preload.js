@@ -10,3 +10,13 @@ contextBridge.exposeInMainWorld(
         },
     }
 );
+
+window.addEventListener('error', (event) => {
+  event.preventDefault();
+  console.error('Renderer Error:', event.error);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  event.preventDefault();
+  console.error('Unhandled Promise Rejection:', event.reason);
+});

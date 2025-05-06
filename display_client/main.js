@@ -23,7 +23,7 @@ try {
 const PORT = process.env.PORT || "1337";
 const PROTOCOL = process.env.PROTOCOL || "ws";
 const IP = process.env.IP || '127.0.0.1';
-const SERVER_URL = `${PROTOCOL}://${IP}:${PORT}`;
+const SERVER_URL = `${PROTOCOL}://${IP}:${PORT}/`;
 
 let windows = [];
 let wsConnection = null;
@@ -38,7 +38,7 @@ function createWindow(id, bounds) {
     x: bounds.x,
     y: bounds.y,
     frame: false,
-    fullscreen: false,
+    fullscreen: true,
     webPreferences: {
       preload: path.join(__dirname, 'web/preload.js'),
       contextIsolation: true,
@@ -146,4 +146,12 @@ app.on('before-quit', () => {
   if (wsConnection) {
     wsConnection.close();
   }
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Main Process Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Main Process Unhandled Rejection:', reason);
 });

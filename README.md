@@ -35,4 +35,3 @@ Server:
 Display Tablets:
 - Communicate with websockets to receive the images
 - Use a display which fetches the images from the main server and displays them on an Electron GUI.
-

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>admin panel</title>
+    <link rel="stylesheet" href="/admin_panel/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="status">
+            <div>
+                <span id="queue-status">Loading...</span>
+            </div>
+
+            <div class="connection-status">
+                <span class="status-indicator"></span>
+                <span class="status-text">Disconnected</span>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="pause-btn" class="danger">Pause Queue</button>
+            <button id="resume-btn" class="success" disabled>Resume Queue</button>
+            <button id="skip-btn" disabled>Skip Current</button>
+            <button id="refresh-btn">Refresh</button>
+        </div>
+        
+        <div class="panels">
+            <div class="panel">
+                <h2>Current Display</h2>
+                <div id="current-display" class="current-display">
+                    <div class="no-content">No images currently displayed</div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>Queue</h2>
+                <ul id="queue-list" class="queue-list">
+                    <li class="no-content">Queue is empty</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${window.location.host}/admin_ws`;
+        let ws;
+        let reconnectTimeout;
+        let queueState = {
+            current: null,
+            queue: [],
+            paused: false
+        };
+        
+        const statusIndicator = document.querySelector('.status-indicator');
+        const statusText = document.querySelector('.status-text');
+        const queueStatusEl = document.getElementById('queue-status');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resumeBtn = document.getElementById('resume-btn');
+        const skipBtn = document.getElementById('skip-btn');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const currentDisplayEl = document.getElementById('current-display');
+        const queueListEl = document.getElementById('queue-list');
+        
+        function connectWebSocket() {
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('Connected to admin WebSocket');
+                statusIndicator.classList.add('connected');
+                statusText.textContent = 'Connected';
+                statusText.style.color = '#2ecc71';
+                
+                ws.send(JSON.stringify({ action: 'getState' }));
+                
+                if (reconnectTimeout) {
+                    clearTimeout(reconnectTimeout);
+                    reconnectTimeout = null;
+                }
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'queueUpdate') {
+                    queueState = {
+                        current: data.current,
+                        queue: data.queue,
+                        paused: data.paused
+                    };
+                    
+                    updateUI();
+                }
+            };
+            
+            ws.onclose = () => {
+                console.log('Disconnected from admin WebSocket');
+                statusIndicator.classList.remove('connected');
+                statusText.textContent = 'Disconnected - Reconnecting...';
+                statusText.style.color = '#e74c3c';
+                
+                reconnectTimeout = setTimeout(connectWebSocket, 3000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                ws.close();
+            };
+        }
+        
+        function updateUI() {
+            queueStatusEl.textContent = queueState.paused ? 'PAUSED' : 'ACTIVE';
+            
+            pauseBtn.disabled = queueState.paused;
+            resumeBtn.disabled = !queueState.paused;
+            skipBtn.disabled = !queueState.current;
+            
+            if (queueState.current) {
+                currentDisplayEl.innerHTML = '';
+                currentDisplayEl.classList.add('current-display');
+                queueState.current.filePaths.forEach(path => {
+                    const img = document.createElement('img');
+                    img.src = path;
+                    img.alt = 'Current display image';
+                    currentDisplayEl.appendChild(img);
+                });
+            } else {
+                currentDisplayEl.innerHTML = '<div class="no-content">No images currently displayed</div>';
+                currentDisplayEl.classList.remove('current-display');
+            }
+            
+            if (queueState.queue.length > 0) {
+                queueListEl.innerHTML = '';
+                queueState.queue.forEach((batch, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'queue-item';
+                    
+                    const thumbnail = document.createElement('img');
+                    thumbnail.className = 'thumbnail';
+                    thumbnail.src = batch.filePaths[0];
+                    thumbnail.alt = 'Batch thumbnail';
+                    
+                    const info = document.createElement('div');
+                    info.className = 'info';
+                    info.innerHTML = `
+                        <div>Batch #${index + 1}</div>
+                        <div>ID: ${batch.id.substring(0, 8)}...</div>
+                        <div>${batch.filePaths.length} images</div>
+                    `;
+                    
+                    const moveButtons = document.createElement('div');
+                    moveButtons.className = 'queue-move-buttons';
+                    
+                    const moveUpBtn = document.createElement('button');
+                    moveUpBtn.textContent = '↑';
+                    moveUpBtn.disabled = index === 0;
+                    moveUpBtn.onclick = () => moveItem(batch.id, index - 1);
+                    
+                    const moveDownBtn = document.createElement('button');
+                    moveDownBtn.textContent = '↓';
+                    moveDownBtn.disabled = index === queueState.queue.length - 1;
+                    moveDownBtn.onclick = () => moveItem(batch.id, index + 1);
+                    
+                    moveButtons.appendChild(moveUpBtn);
+                    moveButtons.appendChild(moveDownBtn);
+                    
+                    const actions = document.createElement('div');
+                    actions.className = 'actions';
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'danger';
+                    removeBtn.textContent = 'Remove';
+                    removeBtn.onclick = () => removeItem(batch.id);
+                    
+                    actions.appendChild(moveButtons);
+                    actions.appendChild(removeBtn);
+                    
+                    li.appendChild(thumbnail);
+                    li.appendChild(info);
+                    li.appendChild(actions);
+                    
+                    queueListEl.appendChild(li);
+                });
+            } else {
+                queueListEl.innerHTML = '<li class="no-content">Queue is empty</li>';
+            }
+        }
+        
+        function pauseQueue() {
+            ws.send(JSON.stringify({ action: 'pause' }));
+        }
+        
+        function resumeQueue() {
+            ws.send(JSON.stringify({ action: 'resume' }));
+        }
+        
+        function skipCurrent() {
+            ws.send(JSON.stringify({ action: 'skip' }));
+        }
+        
+        function removeItem(id) {
+            ws.send(JSON.stringify({ action: 'remove', id }));
+        }
+        
+        function moveItem(id, position) {
+            ws.send(JSON.stringify({ action: 'move', id, position }));
+        }
+        
+        function refreshState() {
+            ws.send(JSON.stringify({ action: 'getState' }));
+        }
+        
+        pauseBtn.addEventListener('click', pauseQueue);
+        resumeBtn.addEventListener('click', resumeQueue);
+        skipBtn.addEventListener('click', skipCurrent);
+        refreshBtn.addEventListener('click', refreshState);
+        
+        window.addEventListener('load', connectWebSocket);
+    </script>
+</body>
+</html>
