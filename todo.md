@@ -1,5 +1,3 @@
-## admin panel
-- [x] implement frontend admin panel
 
 ## server
 - [ ] dynamically generate qr code for admin panel
@@ -15,12 +13,15 @@
 - [x] add a next-image element which caches the next image and shows it 
 - [x] add a queue
 
+
 ## drawing app
-- [ ] show admin ip only on the server's drawing app
-- [ ] show admin panel qr code 
+- [ ] **custom touchscreen touch event handling with /dev/input devices**
+    - [ ] map /dev/input/by-id to each respective monitor (hard code?)
+    - [ ] write an api to expose events to each specific window on the touchscreen devices
+
 - [ ] **fix flickering after drawing stroke**
 - [ ] make left panel fixed width to fix resizing problems
-- [ ] fill tool?
+- [ ] fill tool
 - [x] add an exporting cooldown
 - [x] **modularization**
 - [x] exporting progress updates
@@ -35,3 +36,6 @@
 - [x] clear all frames button
 - [x] make buttons bigger
 - [x] **notification system**
+
+## admin panel
+- [x] implement frontend admin panel

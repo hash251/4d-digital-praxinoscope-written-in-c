@@ -195,14 +195,12 @@ function handleAdminMessage(message) {
                     clearTimeout(activeTimer);
                     activeTimer = null;
                     
-                    // Start next item if queue isn't paused
                     if (!pauseQueue && queue.length > 0) {
                         processQueue();
                     } else {
                         currentBatch = null;
                         sendQueueStateToAdmins();
                         
-                        // Clear display for clients
                         clients.forEach(client => {
                             if (client.readyState === WebSocket.OPEN) {
                                 client.send(JSON.stringify({ 
@@ -247,7 +245,6 @@ function handleAdminMessage(message) {
                 break;
                 
             case 'getState':
-                // This just triggers sending the current state to admins
                 sendQueueStateToAdmins();
                 break;
         }

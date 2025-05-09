@@ -215,7 +215,7 @@ impl PaintingApp {
         }
 
         if temp_dir.exists() {
-            // std::fs::remove_dir_all(temp_dir).expect("failed to clean up temp directory");
+            std::fs::remove_dir_all(temp_dir).expect("failed to clean up temp directory");
         }
     }
 
