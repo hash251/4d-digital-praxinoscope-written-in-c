@@ -2,6 +2,9 @@ use eframe::egui::{self, Color32, Key, Pos2, Rect, Vec2};
 use crate::models::{Stroke, Notification};
 use crate::ui::{draw_left_panel, draw_frame_panel, draw_canvas};
 use crate::utils::distance_to_line_segment;
+use crate::input::InputHandler;
+use std::collections::HashMap;
+use crate::models::Stroke as DrawingStroke;
 
 #[derive(PartialEq, Clone)]
 pub enum ToolMode {
@@ -14,7 +17,6 @@ pub struct PaintingApp {
     pub brush_size: f32,
     pub frames: Vec<Vec<Stroke>>,
     pub current_frame: usize,
-    pub current_stroke: Option<Stroke>,
     pub onion_skin_opacity: f32,
     pub show_onion_skin: bool,
     pub prev_onion_color: Color32,
@@ -37,6 +39,9 @@ pub struct PaintingApp {
     pub exporting: bool, 
     pub export_cooldown: f64,
     pub last_export_time: f64,
+
+    pub input_handler: Option<InputHandler>,
+    pub active_touches: HashMap<u32, DrawingStroke>,
 }
 
 impl Default for PaintingApp {
@@ -47,12 +52,26 @@ impl Default for PaintingApp {
             frames.push(Vec::new());
         }
 
+        let input_handler_result = InputHandler::new(
+            "/dev/input/by-id/usb-Elo_Touch_Solutions_Elo_Touch_Solutions_Pcap_USB_Interface-event-if00"
+        );
+
+        let input_handler = match input_handler_result {
+            Ok(handler) => {
+                log::info!("InputHandler initialized successfully.");
+                Some(handler)
+            }
+            Err(e) => {
+                log::error!("Failed to initialize InputHandler: {}. Touch input will be disabled.", e);
+                None
+            }
+        };
+
         Self {
             brush_color: Color32::BLACK,
             brush_size: 5.0,
             frames,
             current_frame: 0,
-            current_stroke: None,
             onion_skin_opacity: 0.3,
             show_onion_skin: true,
             prev_onion_color: Color32::RED,
@@ -71,8 +90,10 @@ impl Default for PaintingApp {
             notifications: Vec::new(),
             next_notification_id: 0,
             exporting: false,
-            export_cooldown: 0.1, // chgange back to 10 seconds
+            export_cooldown: 0.1, // TODO: change back to 10 seconds
             last_export_time: 0.0,
+            input_handler,
+            active_touches: HashMap::new(),
         }
     }
 }

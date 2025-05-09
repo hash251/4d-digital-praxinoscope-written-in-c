@@ -10,6 +10,8 @@ eframe = "0.30.0"
 egui = "0.30.0"
 egui_extras = { version = "0.30.0", features = ["all_loaders"] }
 env_logger = "0.11.6"
+evdev = "0.13.1"
 image = "0.25.5"
+log = "0.4.27"
 reqwest = { version = "0.12.12", features = ["blocking", "multipart"] }
 tiny-skia = "0.11.4"

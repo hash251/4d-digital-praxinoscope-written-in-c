@@ -4,6 +4,7 @@ mod ui;
 mod animation;
 mod export;
 mod utils;
+mod input;
 
 use app::PaintingApp;
 use eframe::egui;
