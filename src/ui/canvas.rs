@@ -93,11 +93,14 @@ pub fn draw_canvas(app: &mut PaintingApp, ui: &mut egui::Ui) {
                         TouchState::Ended => {
                             log::debug!("[Canvas] Brush Ended event received for id={}. Lift-off screen_pos: ({:.2},{:.2}), norm_pos: ({:.2},{:.2})",
                                 event.id, pos_on_screen.x, pos_on_screen.y, event.pos.x, event.pos.y);
-                            if let Some(stroke) = app.active_touches.remove(&event.id) {
-                                if !stroke.points.is_empty() {
-                                    log::info!("[Canvas] Finalizing stroke for id={}, points: {}.", event.id, stroke.points.len());
+                            if let Some(stroke_to_finalize) = app.active_touches.remove(&event.id) {
+                                if !stroke_to_finalize.points.is_empty() {
+                                    log::info!("[Canvas] Finalizing stroke for id={}, points: {}.", event.id, stroke_to_finalize.points.len());
+                                    
+                                    app.draw_stroke(&painter, &stroke_to_finalize);
+
                                     app.save_state_for_undo();
-                                    app.frames[app.current_frame].push(stroke);
+                                    app.frames[app.current_frame].push(stroke_to_finalize);
                                 } else {
                                     log::info!("[Canvas] Ended stroke for id={} was empty (no points).", event.id);
                                 }

@@ -19,9 +19,9 @@
     - [ ] map /dev/input/by-id to each respective monitor (hard code?)
     - [ ] write an api to expose events to each specific window on the touchscreen devices
 
-- [ ] **fix flickering after drawing stroke**
 - [ ] make left panel fixed width to fix resizing problems
 - [ ] fill tool
+- [x] **fix flickering after drawing stroke**
 - [x] add an exporting cooldown
 - [x] **modularization**
 - [x] exporting progress updates
