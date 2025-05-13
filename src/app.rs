@@ -30,8 +30,8 @@ pub struct PaintingApp {
     pub last_frame_time: f64,
     pub original_canvas_rect: Option<Rect>,
 
-    pub undo_history: Vec<Vec<Vec<Stroke>>>,
-    pub redo_history: Vec<Vec<Vec<Stroke>>>,
+    pub undo_history: Vec<(Vec<Vec<Stroke>>, Rect)>,
+    pub redo_history: Vec<(Vec<Vec<Stroke>>, Rect)>,
     pub tool_mode: ToolMode,
 
     pub left_panel_open: bool,
@@ -174,32 +174,87 @@ impl eframe::App for PaintingApp {
 
 impl PaintingApp {
     pub fn save_state_for_undo(&mut self) {
-        let current_state = self.frames.clone();
-        self.undo_history.push(current_state);
-        self.redo_history.clear();
+        if let Some(current_original_rect) = self.original_canvas_rect {
+            let current_state = self.frames.clone();
+            self.undo_history.push((current_state, current_original_rect));
+            self.redo_history.clear();
 
-        if self.undo_history.len() > 30 {
-            self.undo_history.remove(0);
+            if self.undo_history.len() > 30 {
+                self.undo_history.remove(0);
+            }
+        } else {
+            log::warn!("[Undo] Attempted to save state for undo, but original_canvas_rect is None.");
         }
     }
 
     pub fn undo(&mut self) {
-        if !self.undo_history.is_empty() {
-            let current_state = self.frames.clone();
-            self.redo_history.push(current_state);
+        if let Some((previous_frames_state, historical_original_rect)) = self.undo_history.pop() {
+            if let Some(current_original_rect) = self.original_canvas_rect {
+                self.redo_history.push((self.frames.clone(), current_original_rect));
 
-            let previous_state = self.undo_history.pop().unwrap();
-            self.frames = previous_state;
+                self.frames = previous_frames_state;
+
+                if let Some(current_canvas_rect_for_drawing) = self.canvas_rect {
+                    log::info!(
+                        "[Undo] Recalculating strokes from historical_basis: {:?} to current_canvas: {:?}",
+                        historical_original_rect,
+                        current_canvas_rect_for_drawing
+                    );
+                    self.recalculate_strokes_relative_to(historical_original_rect, current_canvas_rect_for_drawing);
+                    self.original_canvas_rect = Some(current_canvas_rect_for_drawing);
+                } else {
+                    log::warn!("[Undo] canvas_rect is None during undo. Strokes might be misaligned.");
+                    self.original_canvas_rect = Some(historical_original_rect);
+                }
+            } else {
+                 log::warn!("[Undo] original_canvas_rect is None. Cannot properly save current state for redo.");
+                 self.undo_history.push((previous_frames_state, historical_original_rect));
+            }
         }
     }
 
     pub fn redo(&mut self) {
-        if !self.redo_history.is_empty() {
-            let current_state = self.frames.clone();
-            self.undo_history.push(current_state);
+        if let Some((next_frames_state, historical_original_rect)) = self.redo_history.pop() {
+             if let Some(current_original_rect) = self.original_canvas_rect {
+                self.undo_history.push((self.frames.clone(), current_original_rect));
 
-            let next_state = self.redo_history.pop().unwrap();
-            self.frames = next_state;
+                self.frames = next_frames_state;
+
+                if let Some(current_canvas_rect_for_drawing) = self.canvas_rect {
+                     log::info!(
+                        "[Redo] Recalculating strokes from historical_basis: {:?} to current_canvas: {:?}",
+                        historical_original_rect,
+                        current_canvas_rect_for_drawing
+                    );
+                    self.recalculate_strokes_relative_to(historical_original_rect, current_canvas_rect_for_drawing);
+                    self.original_canvas_rect = Some(current_canvas_rect_for_drawing);
+                } else {
+                    log::warn!("[Redo] canvas_rect is None during redo. Strokes might be misaligned.");
+                    self.original_canvas_rect = Some(historical_original_rect);
+                }
+            } else {
+                log::warn!("[Redo] original_canvas_rect is None. Cannot properly save current state for undo.");
+                self.redo_history.push((next_frames_state, historical_original_rect));
+            }
+        }
+    }
+
+    pub fn recalculate_strokes_relative_to(&mut self, from_basis: Rect, to_basis: Rect) {
+        if from_basis.width() <= 0.0 || from_basis.height() <= 0.0 || to_basis.width() <= 0.0 || to_basis.height() <= 0.0 {
+            log::warn!("[Recalculate] Invalid basis rect(s) provided. From: {:?}, To: {:?}. Skipping recalculation.", from_basis, to_basis);
+            return;
+        }
+
+        for frame_strokes in &mut self.frames {
+            for stroke in frame_strokes {
+                for point in &mut stroke.points {
+                    let rel_x = (point.x - from_basis.min.x) / from_basis.width();
+                    let rel_y = (point.y - from_basis.min.y) / from_basis.height();
+
+                    point.x = to_basis.min.x + (rel_x * to_basis.width());
+                    point.y = to_basis.min.y + (rel_y * to_basis.height());
+                }
+            }
         }
     }
 
@@ -299,26 +354,6 @@ impl PaintingApp {
             to_remove.dedup();
             for i in to_remove.into_iter().rev() {
                 self.frames[self.current_frame].remove(i);
-            }
-        }
-    }
-
-    pub fn recalculate_stroke_positions(&mut self, new_rect: Rect) {
-        let original_rect = if let Some(rect) = self.original_canvas_rect {
-            rect
-        } else {
-            return;
-        };
-
-        for frame in &mut self.frames {
-            for stroke in frame {
-                for point in &mut stroke.points {
-                    let rel_x = (point.x - original_rect.min.x) / original_rect.width();
-                    let rel_y = (point.y - original_rect.min.y) / original_rect.height();
-
-                    point.x = new_rect.min.x + (rel_x * new_rect.width());
-                    point.y = new_rect.min.y + (rel_y * new_rect.height());
-                }
             }
         }
     }

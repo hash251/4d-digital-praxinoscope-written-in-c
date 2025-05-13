@@ -5,24 +5,32 @@ use crate::input::TouchState;
 
 pub fn draw_canvas(app: &mut PaintingApp, ui: &mut egui::Ui) {
     let panel_rect = ui.available_rect_before_wrap();
-
     let calculated_canvas_rect = app.calculate_aspect_ratio_rect(panel_rect);
 
-    if app.canvas_rect.is_none() {
-        app.canvas_rect = Some(calculated_canvas_rect);
+    if app.original_canvas_rect.is_none() {
         app.original_canvas_rect = Some(calculated_canvas_rect);
-        log::info!("Canvas Initialized: rect={:?}, original_rect={:?}", app.canvas_rect, app.original_canvas_rect);
+        app.canvas_rect = Some(calculated_canvas_rect);
+        log::info!("Canvas Initialized: original_rect and canvas_rect set to {:?}", calculated_canvas_rect);
     } else {
-        let current_basis_rect = app.original_canvas_rect.unwrap();
-        if current_basis_rect != calculated_canvas_rect {
-            log::info!("Canvas resized. Old basis: {:?}, New target: {:?}", current_basis_rect, calculated_canvas_rect);
-            app.recalculate_stroke_positions(calculated_canvas_rect);
+        let last_original_rect = app.original_canvas_rect.unwrap();
+        if last_original_rect != calculated_canvas_rect {
+            log::info!(
+                "Canvas area changed. Old basis: {:?}, New target drawing area: {:?}",
+                last_original_rect,
+                calculated_canvas_rect
+            );
+
+            app.recalculate_strokes_relative_to(last_original_rect, calculated_canvas_rect);
             app.original_canvas_rect = Some(calculated_canvas_rect);
             log::info!("Strokes recalculated. New basis: {:?}", app.original_canvas_rect);
         }
         app.canvas_rect = Some(calculated_canvas_rect);
     }
-    let current_draw_canvas_rect = app.canvas_rect.unwrap();
+    
+    let current_draw_canvas_rect = app.canvas_rect.unwrap_or_else(|| {
+        log::error!("[Canvas] app.canvas_rect is None before drawing. Defaulting to panel_rect.");
+        panel_rect
+    });
 
     let (_response, painter) = ui.allocate_painter(panel_rect.size(), Sense::click_and_drag());
 
@@ -86,12 +94,9 @@ pub fn draw_canvas(app: &mut PaintingApp, ui: &mut egui::Ui) {
                                         stroke_to_finalize.points.push(pos_on_screen);
                                     }
                                 }
-
                                 if !stroke_to_finalize.points.is_empty() {
-                                    
                                     app.draw_stroke(&painter, &stroke_to_finalize); // FLICKER FIX
-
-                                    app.save_state_for_undo();
+                                    app.save_state_for_undo(); 
                                     app.frames[app.current_frame].push(stroke_to_finalize);
                                 }
                             }
