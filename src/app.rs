@@ -1,4 +1,4 @@
-use eframe::egui::{self, Color32, Key, Pos2, Rect, Vec2};
+use eframe::egui::{self, Color32, Key, Pos2, Rect, Vec2, RichText, FontId, FontFamily};
 use crate::models::{Stroke, Notification};
 use crate::ui::{draw_left_panel, draw_frame_panel, draw_canvas};
 use crate::utils::distance_to_line_segment;
@@ -33,6 +33,8 @@ pub struct PaintingApp {
     pub undo_history: Vec<Vec<Vec<Stroke>>>,
     pub redo_history: Vec<Vec<Vec<Stroke>>>,
     pub tool_mode: ToolMode,
+
+    pub left_panel_open: bool,
 
     pub notifications: Vec<Notification>,
     pub next_notification_id: u64,
@@ -94,6 +96,7 @@ impl Default for PaintingApp {
             last_export_time: 0.0,
             input_handler,
             active_touches: HashMap::new(),
+            left_panel_open: false,
         }
     }
 }
@@ -136,13 +139,32 @@ impl eframe::App for PaintingApp {
 
         self.update_animation(ctx);
 
-        egui::SidePanel::left("left_panel").show(ctx, |ui| {
-            draw_left_panel(self, ctx, ui);
-        });
+        if self.left_panel_open {
+            egui::SidePanel::left("left_panel")
+                .min_width(300.0)
+                .default_width(350.0)
+                .show(ctx, |ui| {
+                    draw_left_panel(self, ctx, ui);
+                });
+        }
 
         draw_frame_panel(self, ctx);
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            egui::TopBottomPanel::top("menu_toggle_bar")
+                .show_inside(ui, |bar_ui| {
+                    bar_ui.horizontal_centered(|hbar_ui| {
+                        let button_text_str = if self.left_panel_open { "☰ Close Tools" } else { "☰ Open Tools" };
+                        
+                        let rich_button_text = RichText::new(button_text_str)
+                            .font(FontId::new(18.0, FontFamily::Proportional));
+
+                        if hbar_ui.button(rich_button_text).clicked() {
+                            self.left_panel_open = !self.left_panel_open;
+                        }
+                    });
+                });
+            
             draw_canvas(self, ui);
         });
 

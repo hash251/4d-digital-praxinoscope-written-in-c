@@ -46,7 +46,7 @@ impl InputHandler {
     fn read_events(mut device: Device, sender: Sender<TouchInput>) -> Result<(), Box<dyn Error>> {
         let mut current_touch_id: Option<u32> = None;
         let mut current_pos = Pos2::new(0.0, 0.0);
-        let mut new_touch_began_pending_for_id: Option<u32> = None; // Stores ID if a Began event needs to be sent on next SYN
+        let mut new_touch_began_pending_for_id: Option<u32> = None;
 
         let mut min_x = 0;
         let mut max_x = 1;
@@ -67,7 +67,7 @@ impl InputHandler {
                             max_y = info.maximum();
                             log::info!("[InputHandler] Found ABS_MT_POSITION_Y: min={}, max={}", min_y, max_y);
                         }
-                        _ => { /* log::debug!("[InputHandler] Other axis: {:?}, info: {:?}", axis_code, info); */ }
+                        _ => { log::debug!("[InputHandler] Other axis: {:?}, info: {:?}", axis_code, info); }
                     }
                 }
             }
@@ -157,7 +157,7 @@ impl InputHandler {
                                     pos: current_pos,
                                     state: TouchState::Began,
                                 }).unwrap_or_else(|e| log::error!("Failed to send TouchBegan event: {}",e));
-                                new_touch_began_pending_for_id = None; // Clear the pending flag
+                                new_touch_began_pending_for_id = None;
 
                                 log::debug!("[InputHandler] Sending Initial Touch Moved (SYN): id={}, pos=({:.2},{:.2})", id, current_pos.x, current_pos.y);
                                 sender.send(TouchInput {
