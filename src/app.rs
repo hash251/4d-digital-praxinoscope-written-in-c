@@ -46,26 +46,45 @@ pub struct PaintingApp {
     pub active_touches: HashMap<u32, DrawingStroke>,
 }
 
-impl Default for PaintingApp {
-    fn default() -> Self {
+impl PaintingApp {
+    pub fn new(input_device_path_option: Option<String>) -> Self {
         let mut frames = Vec::new();
-
         for _ in 0..8 {
             frames.push(Vec::new());
         }
 
-        let input_handler_result = InputHandler::new(
-            "/dev/input/by-id/usb-Elo_Touch_Solutions_Elo_Touch_Solutions_Pcap_USB_Interface-event-if00"
-        );
-
-        let input_handler = match input_handler_result {
-            Ok(handler) => {
-                log::info!("InputHandler initialized successfully.");
-                Some(handler)
+        let input_handler = match input_device_path_option {
+            Some(path_str) => {
+                match InputHandler::new(&path_str) {
+                    Ok(handler) => {
+                        log::info!("InputHandler initialized successfully with device: {}.", path_str);
+                        Some(handler)
+                    }
+                    Err(e) => {
+                        log::error!("Failed to initialize InputHandler with device {}: {}. Touch input may be disabled.", path_str, e);
+                        None
+                    }
+                }
             }
-            Err(e) => {
-                log::error!("Failed to initialize InputHandler: {}. Touch input will be disabled.", e);
-                None
+            None => {
+                let default_path = "/dev/input/by-id/usb-Elo_Touch_Solutions_Elo_Touch_Solutions_Pcap_USB_Interface-event-if00";
+                log::warn!(
+                    "No input device path provided via --input. Attempting to use default path: {}",
+                    default_path
+                );
+                match InputHandler::new(default_path) {
+                    Ok(handler) => {
+                        log::info!("InputHandler initialized successfully with default device.");
+                        Some(handler)
+                    }
+                    Err(e) => {
+                        log::warn!(
+                            "Failed to initialize InputHandler with default device: {}. Touch input may be disabled. Consider providing an input device path via --input if touch is not working.",
+                            e
+                        );
+                        None
+                    }
+                }
             }
         };
 
@@ -92,7 +111,7 @@ impl Default for PaintingApp {
             notifications: Vec::new(),
             next_notification_id: 0,
             exporting: false,
-            export_cooldown: 0.1, // TODO: change back to 10 seconds
+            export_cooldown: 0.1, 
             last_export_time: 0.0,
             input_handler,
             active_touches: HashMap::new(),

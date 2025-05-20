@@ -1,6 +1,5 @@
-
 ## server
-- [ ] dynamically generate qr code for admin panel
+- [ ] dynamically generate qr code for admin panel, put on drawing app
 - [x] queue management with the admin panel
 - [x] communicate with multiple display clients
 - [x] implemented websockets and POST requests for images
@@ -13,14 +12,10 @@
 - [x] add a next-image element which caches the next image and shows it 
 - [x] add a queue
 
-
 ## drawing app
-- [ ] **custom touchscreen touch event handling with /dev/input devices**
-    - [ ] map /dev/input/by-id to each respective monitor (hard code?)
-    - [ ] write an api to expose events to each specific window on the touchscreen devices
-
-- [ ] make left panel fixed width to fix resizing problems
 - [ ] fill tool
+- [x] custom monitor offset with monitor arg (fixed by switching to X11)
+- [x] **custom touchscreen touch event handling with /dev/input devices**
 - [x] **fix flickering after drawing stroke**
 - [x] add an exporting cooldown
 - [x] **modularization**
