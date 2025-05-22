@@ -44,10 +44,11 @@ pub struct PaintingApp {
 
     pub input_handler: Option<InputHandler>,
     pub active_touches: HashMap<u32, DrawingStroke>,
+    pub invert_input: bool,
 }
 
 impl PaintingApp {
-    pub fn new(input_device_path_option: Option<String>) -> Self {
+    pub fn new(input_device_path_option: Option<String>, invert_input: bool) -> Self { 
         let mut frames = Vec::new();
         for _ in 0..8 {
             frames.push(Vec::new());
@@ -116,6 +117,7 @@ impl PaintingApp {
             input_handler,
             active_touches: HashMap::new(),
             left_panel_open: false,
+            invert_input,
         }
     }
 }

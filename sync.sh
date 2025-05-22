@@ -40,7 +40,6 @@ for REMOTE_IP in "${REMOTE_IPS[@]}"; do
    echo 'PROTOCOL=ws' >> $REMOTE_PATH/.env"
   echo "[+] .env file updated on remote with the local ip: $LOCAL_IP"
   
-  # Fix NVM setup and Node version check
   ssh -o ConnectTimeout=10 "$REMOTE_USER@$REMOTE_IP" "bash -c 'export NVM_DIR=\$HOME/.nvm;
    if [ ! -s \"\$NVM_DIR/nvm.sh\" ]; then
      echo \"nvm is not installed. Installing nvm...\";
@@ -69,7 +68,6 @@ for REMOTE_IP in "${REMOTE_IPS[@]}"; do
      fi;
    fi'"
   
-  # Fix the npm install and dependency setup
   ssh -o ConnectTimeout=10 "$REMOTE_USER@$REMOTE_IP" "bash -c 'export NVM_DIR=\$HOME/.nvm;
    [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\";
    cd $REMOTE_PATH;
@@ -90,7 +88,6 @@ for REMOTE_IP in "${REMOTE_IPS[@]}"; do
      echo \"[+] node_modules directory exists, skipping npm install\";
    fi'"
   
-  # Launch the electron application
   ssh -X -o ConnectTimeout=10 "$REMOTE_USER@$REMOTE_IP" "bash -c 'export NVM_DIR=\$HOME/.nvm;
    [ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\";
    cd $REMOTE_PATH;

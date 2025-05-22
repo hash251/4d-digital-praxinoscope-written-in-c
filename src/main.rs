@@ -12,6 +12,7 @@ use clap::Parser;
 use display_info::DisplayInfo;
 use log;
 
+
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
 struct Args {
@@ -23,6 +24,9 @@ struct Args {
 
     #[arg(long, help = "monitor index (0 indexed, 0 = primary)")]
     monitor: Option<u32>,
+
+    #[arg(long, help = "Invert touch input mapping for final project")]
+    invert: bool,
 }
 
 fn main() -> eframe::Result {
@@ -31,6 +35,7 @@ fn main() -> eframe::Result {
     let args = Args::parse();
     let instance = args.instance;
     let input_device_path = args.input;
+    let invert_input = args.invert;
 
     let mut viewport_builder = egui::ViewportBuilder::default();
 
@@ -97,7 +102,7 @@ fn main() -> eframe::Result {
         options,
         Box::new(move |cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Ok(Box::new(PaintingApp::new(input_device_path)))
+            Ok(Box::new(PaintingApp::new(input_device_path, invert_input)))
         }),
     )
 }
