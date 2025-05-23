@@ -39,7 +39,6 @@ fn main() -> eframe::Result {
 
     let mut viewport_builder = egui::ViewportBuilder::default();
     let mut target_position = egui::pos2(0.0, 0.0);
-    let mut target_size = [800.0, 1280.0];
 
     match DisplayInfo::all() {
         Ok(mut displays) if !displays.is_empty() => {
@@ -74,7 +73,7 @@ fn main() -> eframe::Result {
             };
 
             target_position = egui::pos2(target_display_info.x as f32, target_display_info.y as f32);
-            target_size = [target_display_info.width as f32, target_display_info.height as f32];
+            let target_size = [target_display_info.width as f32, target_display_info.height as f32];
 
             viewport_builder = viewport_builder
                 .with_position(target_position)
