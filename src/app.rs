@@ -45,10 +45,11 @@ pub struct PaintingApp {
     pub input_handler: Option<InputHandler>,
     pub active_touches: HashMap<u32, DrawingStroke>,
     pub invert_input: bool,
+    pub target_position: Pos2,
 }
 
 impl PaintingApp {
-    pub fn new(input_device_path_option: Option<String>, invert_input: bool) -> Self { 
+    pub fn new(input_device_path_option: Option<String>, invert_input: bool, target_position: Pos2) -> Self {
         let mut frames = Vec::new();
         for _ in 0..8 {
             frames.push(Vec::new());
@@ -118,6 +119,7 @@ impl PaintingApp {
             active_touches: HashMap::new(),
             left_panel_open: false,
             invert_input,
+            target_position,
         }
     }
 }
@@ -127,6 +129,17 @@ impl eframe::App for PaintingApp {
         ctx.set_pixels_per_point(1.2);
 
         self.update_notifications(ctx);
+
+        let current_pos = ctx.input(|i| i.viewport().clone()).outer_rect.unwrap().min;
+        if (current_pos.x - self.target_position.x).abs() > 300.0 || (current_pos.y - self.target_position.y).abs() > 100.0 {
+            log::warn!(
+                "Window position drifted to ({}, {}). Resetting to target position ({}, {})",
+                current_pos.x, current_pos.y, self.target_position.x, self.target_position.y
+            );
+            ctx.send_viewport_cmd(egui::ViewportCommand::OuterPosition(self.target_position));
+        }
+
+        println!("Actual window position: ({}, {})", current_pos.x, current_pos.y);
 
         if self.exporting {
             self.exporting = false;

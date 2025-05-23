@@ -38,12 +38,15 @@ fn main() -> eframe::Result {
     let invert_input = args.invert;
 
     let mut viewport_builder = egui::ViewportBuilder::default();
+    let mut target_position = egui::pos2(0.0, 0.0);
+    let mut target_size = [800.0, 1280.0];
 
     match DisplayInfo::all() {
-        Ok(displays) if !displays.is_empty() => {
+        Ok(mut displays) if !displays.is_empty() => {
+            displays.sort_unstable_by_key(|d| d.x);
             let target_display_info: &DisplayInfo = if let Some(monitor_index) = args.monitor {
                 if let Some(display) = displays.get(monitor_index as usize) {
-                    log::info!(
+                    println!(
                         "User requested monitor index: {}. Found display: '{}' ({}x{}) at ({},{}).",
                         monitor_index, display.name, display.width, display.height, display.x, display.y
                     );
@@ -70,25 +73,26 @@ fn main() -> eframe::Result {
                 primary_display
             };
 
+            target_position = egui::pos2(target_display_info.x as f32, target_display_info.y as f32);
+            target_size = [target_display_info.width as f32, target_display_info.height as f32];
+
             viewport_builder = viewport_builder
-                .with_position(egui::pos2(target_display_info.x as f32, target_display_info.y as f32))
-                .with_inner_size([target_display_info.width as f32, target_display_info.height as f32])
-                .with_fullscreen(true) 
+                .with_position(target_position)
+                .with_inner_size(target_size)
+                .with_fullscreen(true)
                 .with_decorations(false);
         }
         Ok(_) => { 
             log::error!("No displays found by display-info crate. Using default viewport settings.");
             viewport_builder = viewport_builder
                 .with_inner_size([1080.0, 1920.0])
-                .with_maximized(true)
-                .with_fullscreen(true);
+                .with_maximized(true);
         }
         Err(e) => {
             log::error!("Failed to get display info: {}. Using default viewport settings.", e);
             viewport_builder = viewport_builder
-                .with_inner_size([1080.0, 1920.0]) 
-                .with_maximized(true)
-                .with_fullscreen(true);
+                .with_inner_size([1080.0, 1920.0])
+                .with_maximized(true);
         }
     }
     
@@ -102,7 +106,7 @@ fn main() -> eframe::Result {
         options,
         Box::new(move |cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
-            Ok(Box::new(PaintingApp::new(input_device_path, invert_input)))
+            Ok(Box::new(PaintingApp::new(input_device_path, invert_input, target_position)))
         }),
     )
 }
