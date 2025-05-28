@@ -1,3 +1,6 @@
+## tooling
+- [ ] find a consistent way to map monitors to /dev/input/eventX events
+
 ## server
 - [ ] dynamically generate qr code for admin panel, put on drawing app
 - [x] queue management with the admin panel

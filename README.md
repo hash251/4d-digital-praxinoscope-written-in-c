@@ -17,6 +17,9 @@ Start drawing clients:
 ```
 ./sync.sh
 ```
+
+- udevadm first, map second, and then start
+
 ## Architecture
 
 Drawing Client:
@@ -29,3 +32,6 @@ Server:
 Display Tablets:
 - Communicate with websockets to receive the images
 - Use a display which fetches the images from the main server and displays them on an Electron GUI.
+
+
+need to know the ID of each touch event (from xinput list) and i need to know which id corresponds to the monitor 
