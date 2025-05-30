@@ -2,9 +2,6 @@ use eframe::egui::{self, Color32, FontFamily, FontId, RichText, Vec2};
 use crate::app::{PaintingApp, ToolMode};
 
 pub fn draw_left_panel(app: &mut PaintingApp, ctx: &egui::Context, panel_ui: &mut egui::Ui) {
-    // Common style setup (consider if this should be app-wide or more local)
-    // If this is called frequently, cloning and setting style on ctx can be less efficient.
-    // For now, keeping it as is from your original code.
     let mut style = (*ctx.style()).clone();
     style.text_styles = [
         (egui::TextStyle::Heading, FontId::new(20.0, FontFamily::Proportional)),
@@ -139,7 +136,7 @@ pub fn draw_left_panel(app: &mut PaintingApp, ctx: &egui::Context, panel_ui: &mu
                                 .clicked()
                             {
                                 app.playing_animation = !app.playing_animation;
-                                app.last_frame_time = ctx.input(|i| i.time); // Use ctx from draw_left_panel
+                                app.last_frame_time = ctx.input(|i| i.time);
                             }
                         });
 
@@ -195,7 +192,6 @@ pub fn draw_left_panel(app: &mut PaintingApp, ctx: &egui::Context, panel_ui: &mu
                                 }
 
                                 if ui.button("Paste Frame").clicked() {
-                                    // save_state_for_undo is called within paste_to_current_frame
                                     app.paste_to_current_frame();
                                 }
                                 ui.end_row();
@@ -205,7 +201,7 @@ pub fn draw_left_panel(app: &mut PaintingApp, ctx: &egui::Context, panel_ui: &mu
                         scroll_ui.separator();
                         scroll_ui.add_space(1.0);
 
-                        let current_time = ctx.input(|i| i.time); // Use ctx from draw_left_panel
+                        let current_time = ctx.input(|i| i.time); 
                         let cooldown_remaining = app.export_cooldown - (current_time - app.last_export_time);
                         let in_cooldown = cooldown_remaining > 0.0;
 

@@ -17,9 +17,7 @@ pub fn distance_to_line_segment(p: Pos2, v: Pos2, w: Pos2) -> f32 {
 pub fn get_local_ip_address() -> Option<String> {
     match UdpSocket::bind("0.0.0.0:0") {
         Ok(socket) => {
-            // Connect to a well-known address (doesn't actually send data)
-            // Using Google's public DNS, but any reachable IP for the local network interface detection would work.
-            match socket.connect("8.8.8.8:80") { // Or a known local router IP e.g., "192.168.1.1:80"
+            match socket.connect("8.8.8.8:80") {
                 Ok(_) => {
                     match socket.local_addr() {
                         Ok(local_addr) => {
