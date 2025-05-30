@@ -1,8 +1,8 @@
-## tooling
-- [ ] find a consistent way to map monitors to /dev/input/eventX events
+## tooling (startup)
+- [x] find a consistent way to map monitors to /dev/input/eventX events
+- [ ] run apps on startup
 
 ## server
-- [ ] dynamically generate qr code for admin panel, put on drawing app
 - [x] queue management with the admin panel
 - [x] communicate with multiple display clients
 - [x] implemented websockets and POST requests for images
@@ -17,6 +17,7 @@
 
 ## drawing app
 - [ ] fill tool
+- [ ] show link to admin panel on the app
 - [x] custom monitor offset with monitor arg (fixed by switching to X11)
 - [x] **custom touchscreen touch event handling with /dev/input devices**
 - [x] **fix flickering after drawing stroke**
@@ -37,3 +38,4 @@
 
 ## admin panel
 - [x] implement frontend admin panel
+/home/pi/programming/project/node_modules/.bin/electron /home/pi/programming/project/display_client &ID"
