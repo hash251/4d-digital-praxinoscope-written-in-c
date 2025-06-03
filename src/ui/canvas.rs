@@ -59,25 +59,17 @@ pub fn draw_canvas(app: &mut PaintingApp, ui: &mut egui::Ui) {
                 let is_portrait = screen_rect.height() > screen_rect.width();
                 if is_portrait {
                     if app.invert_input {
-                        // Apply the "inverted" transformation for specific portrait setups
-                        // This corresponds to a -90deg rotation of input coordinates (or +90deg physical device rotation)
-                        // Input (Tx, Ty) -> Screen (1-Ty, Tx)
                         final_norm_pos.x = 1.0 - original_norm_pos.y;
                         final_norm_pos.y = original_norm_pos.x;
                         log::trace!("[Canvas] Portrait input (inverted): T({:.2},{:.2}) -> S({:.2},{:.2})",
                                     original_norm_pos.x, original_norm_pos.y, final_norm_pos.x, final_norm_pos.y);
                     } else {
-                        // Original portrait transformation
-                        // This corresponds to a +90deg rotation of input coordinates (or -90deg physical device rotation)
-                        // Input (Tx, Ty) -> Screen (Ty, 1-Tx)
                         final_norm_pos.x = original_norm_pos.y;
                         final_norm_pos.y = 1.0 - original_norm_pos.x;
                         log::trace!("[Canvas] Portrait input (default): T({:.2},{:.2}) -> S({:.2},{:.2})",
                                     original_norm_pos.x, original_norm_pos.y, final_norm_pos.x, final_norm_pos.y);
                     }
                 } else {
-                    // For landscape, final_norm_pos remains original_norm_pos
-                    // No transformation needed unless landscape also needs inversion (not requested)
                     log::trace!("[Canvas] Landscape input: T({:.2},{:.2}) -> S({:.2},{:.2})",
                                 original_norm_pos.x, original_norm_pos.y, final_norm_pos.x, final_norm_pos.y);
                 }

@@ -13,7 +13,7 @@ for REMOTE_IP in "${REMOTE_IPS[@]}"; do
   if ! ping -c 1 -W 2 $REMOTE_IP >/dev/null 2>&1; then
     echo "[!] ERROR: Cannot reach $REMOTE_IP - skipping this host"
     echo "=========================================="
-    continue
+    # continue
   fi
   
   if ! ssh -o ConnectTimeout=10 -o BatchMode=yes "$REMOTE_USER@$REMOTE_IP" "echo SSH connection successful" >/dev/null 2>&1; then

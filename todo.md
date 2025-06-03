@@ -1,11 +1,12 @@
 ## server
-- [ ] dynamically generate qr code for admin panel, put on drawing app
+- [x] admin link
 - [x] queue management with the admin panel
 - [x] communicate with multiple display clients
 - [x] implemented websockets and POST requests for images
 - [x] image queue system, could just be time-reliant for now
 
 ## display client
+- [x] reconnect to the server when it turns off 
 - [x] fullscreen main monitor
 - [x] handle websocket errors when the server is offline
 - [x] store variable to keep track of monitor index
@@ -14,6 +15,8 @@
 
 ## drawing app
 - [ ] fill tool
+- [ ] save frames to be loaded back as an example
+- [ ] reduce memory overhead
 - [x] custom monitor offset with monitor arg (fixed by switching to X11)
 - [x] **custom touchscreen touch event handling with /dev/input devices**
 - [x] **fix flickering after drawing stroke**

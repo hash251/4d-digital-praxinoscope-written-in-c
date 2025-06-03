@@ -1,7 +1,7 @@
 use eframe::egui::{self, Color32, Key, Pos2, Rect, Vec2, RichText, FontId, FontFamily};
 use crate::models::{Stroke, Notification};
 use crate::ui::{draw_left_panel, draw_frame_panel, draw_canvas};
-use crate::utils::distance_to_line_segment;
+use crate::utils::{distance_to_line_segment, get_local_ip_address};
 use crate::input::InputHandler;
 use std::collections::HashMap;
 use crate::models::Stroke as DrawingStroke;
@@ -35,10 +35,12 @@ pub struct PaintingApp {
     pub tool_mode: ToolMode,
 
     pub left_panel_open: bool,
+    pub show_admin_panel: bool,
+    pub local_ip_address: Option<String>,
 
     pub notifications: Vec<Notification>,
     pub next_notification_id: u64,
-    pub exporting: bool, 
+    pub exporting: bool,
     pub export_cooldown: f64,
     pub last_export_time: f64,
 
@@ -90,6 +92,11 @@ impl PaintingApp {
             }
         };
 
+        let local_ip = get_local_ip_address();
+        if local_ip.is_none() {
+            log::warn!("Could not determine local IP address. Admin link will use a default (127.0.0.1).");
+        }
+
         Self {
             brush_color: Color32::BLACK,
             brush_size: 5.0,
@@ -120,6 +127,8 @@ impl PaintingApp {
             left_panel_open: false,
             invert_input,
             target_position,
+            show_admin_panel: false,
+            local_ip_address: local_ip,
         }
     }
 }
@@ -139,7 +148,7 @@ impl eframe::App for PaintingApp {
             ctx.send_viewport_cmd(egui::ViewportCommand::OuterPosition(self.target_position));
         }
 
-        println!("Actual window position: ({}, {})", current_pos.x, current_pos.y);
+        log::info!("Actual window position: ({}, {})", current_pos.x, current_pos.y);
 
         if self.exporting {
             self.exporting = false;
@@ -471,7 +480,7 @@ impl PaintingApp {
                     });
                 });
             
-            y_offset += 50.0;
+            y_offset += 70.0;
         }
     }
 }

@@ -36,7 +36,7 @@ impl PaintingApp {
         notification_id: u64,
         ctx: egui::Context
     ) {
-        let temp_dir = std::path::Path::new("./temp_frames");
+        let temp_dir = std::path::Path::new("/home/softdev/programming/project/target/release/temp_frames");
         if !temp_dir.exists() {
             std::fs::create_dir_all(temp_dir).expect("failed to create temp directory");
         }
@@ -163,7 +163,7 @@ impl PaintingApp {
                 }
             }
 
-            let frame_file = format!("./temp_frames/{:01}.png", frame_index);
+            let frame_file = format!("/home/softdev/programming/project/target/release/temp_frames/{:01}.png", frame_index);
             imgbuf
                 .save_with_format(&frame_file, image::ImageFormat::Png)
                 .expect("failed to save frame as png");
